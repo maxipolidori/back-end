@@ -1,75 +1,54 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using Nancy;
-using Nancy.Extensions;
 using Nancy.ModelBinding;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Backend
 {
     public class Ejemplo : Nancy.NancyModule
     {
-        private static List<Tuple<int, Cliente>> listaClientes = new List<Tuple<int,Cliente>> ();
-        private static int nextIdCliente = 1;
-        public Ejemplo()
+        private Servicio servicio;
+
+        public Ejemplo(Servicio s)
         {
+            servicio = s;
+
             Post("/", args => 
             {
                 Cliente c = this.Bind();
-                listaClientes.Add(new Tuple<int, Cliente>(nextIdCliente, c));
-                nextIdCliente++;
-                return Response.AsJson("Cliente agregado");
+                Cliente resp = servicio.Create(c);
+                return Response.AsJson(resp);
             });
 
             Get("/clientes", args => 
             {
-                List<Cliente> respuesta = new List<Cliente>();
-                foreach(Tuple<int, Cliente> t in listaClientes)
-                {
-                    Cliente c = t.Item2;
-                    respuesta.Add(c);
-                }
-                return JsonConvert.SerializeObject(respuesta);
+                return JsonConvert.SerializeObject(servicio.Read());
             });
 
             Get("/clientes/{id:int}", args => 
             {
-                int id = args.id;
-                Tuple<int, Cliente> t = listaClientes.Find(x => x.Item1 == id);
-                if(t != null)
-                {
-                    Cliente c = t.Item2;
+                Cliente c = servicio.Read(args.id);
+                if(c != null)
                     return JsonConvert.SerializeObject(c);
-                }
-                else return Response.AsJson("Cliente inexistente");
-                
+                else return null;                
             });
 
             Put("clientes/{id:int}", args => 
             {
                 int id = args.id;
-                int index = listaClientes.FindIndex(t => t.Item1 == id);
-                if(index >= 0)
-                {
-                    Cliente newC = this.Bind();
-                    listaClientes[index] =  new Tuple<int, Cliente>(id, newC);
-                    return "Cliente editado";
-                }
-                else return "Cliente inexistente";
+                Cliente c = this.Bind();
+                int resp = servicio.Update(id, c);
+                if(resp > 0)
+                    return Response.AsJson(c);
+                else return null;
             });
 
             Delete("clientes/{id:int}", args => 
             {
                 int id = args.id;
-                int index = listaClientes.FindIndex(t => t.Item1 == id);
-                if(index >= 0)
-                {
-                    listaClientes.RemoveAt(index);
-                    return "Cliente eliminado";
-                }
-                else return "Cliente inexistente";
+                int resp = servicio.Delete(id);
+                if(resp > 0)
+                    return HttpStatusCode.OK;
+                else return HttpStatusCode.BadRequest;
             });
         }
     }
