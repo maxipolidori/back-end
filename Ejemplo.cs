@@ -21,14 +21,14 @@ namespace Backend
 
             Get("/clientes", args => 
             {
-                return JsonConvert.SerializeObject(servicio.Read());
+                return Response.AsJson(servicio.Read());
             });
 
             Get("/clientes/{id:int}", args => 
             {
                 Cliente c = servicio.Read(args.id);
                 if(c != null)
-                    return JsonConvert.SerializeObject(c);
+                    return Response.AsJson(c);
                 else return null;                
             });
 
@@ -37,7 +37,7 @@ namespace Backend
                 int id = args.id;
                 Cliente c = this.Bind();
                 int resp = servicio.Update(id, c);
-                if(resp > 0)
+                if(resp >= 0)
                     return Response.AsJson(c);
                 else return null;
             });
@@ -46,7 +46,7 @@ namespace Backend
             {
                 int id = args.id;
                 int resp = servicio.Delete(id);
-                if(resp > 0)
+                if(resp >= 0)
                     return HttpStatusCode.OK;
                 else return HttpStatusCode.BadRequest;
             });
